@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "utcValue": {
+      "type": "string",
+      "defaultValue": "[utcNow()]"
+    },
+    "azureUserId": {
+      "type": "string"
+    },
+    "password": {
+      "type": "securestring"
+    }
+  },
+  "variables": {
+    "dsRoleAssignmentId": "[guid(resourceGroup().id, variables('dsRoleDefinitionId'), resourceId('Microsoft.ManagedIdentity/identities', variables('dsIdentityName')))]",
+    "dsRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+    "dsIdentityName": "dsId"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "name": "[variables('dsIdentityName')]",
+      "apiVersion": "2018-11-30",
+      "location": "[resourceGroup().location]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2018-09-01-preview",
+      "name": "[variables('dsRoleAssignmentId')]",
+      "properties": {
+        "roleDefinitionId": "[variables('dsRoleDefinitionId')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('dsIdentityName')), '2018-11-30').principalId]",
+        "scope": "[resourceGroup().id]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "createAzureActiveDirectoryApp",
+      "location": "[resourceGroup().location]",
+      "kind": "AzurePowerShell",
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('dsIdentityName'))]"
+      ],
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[resourceID('Microsoft.ManagedIdentity/userAssignedIdentities', 'dsId')]": {}
+        }
+      },
+      "properties": {
+        "forceUpdateTag": "[parameters('utcValue')]",
+        "azPowerShellVersion": "5.0",
+        "arguments": "[concat('-appName', ' ', concat('\\\"', 'newApp',uniquestring(resourceGroup().id), '\\\"'), ' ', '-subscriptionName', ' ', concat('\\\"', subscription().displayName, '\\\"'), ' ', '-azureUserId', ' ', concat('\\\"', parameters('azureUserId'), '\\\"'), ' ', '-password', ' ', concat('\\\"', parameters('password'), '\\\"'))]",
+        "scriptContent": "Install-Module -Name \"Az.Accounts\" -Force\n\r$PWord = ConvertTo-SecureString -String $password -AsPlainText -Force\n\r$User = $azureUserId\n\r$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord\n\rConnect-AzAccount -Credential $Credential\n\rImport-Module Az.Resources\n\r$ServicePrincipal = New-AzADServicePrincipal\n\r$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ServicePrincipal.Secret)\n\r$appClientSecret =[System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)\n\r$tenantID = (Get-AzSubscription -SubscriptionName $subscriptionName).TenantId\n\r$appClientID = $ServicePrincipal.ApplicationId\n\r$DeploymentScriptOutputs = @{}\n\r$DeploymentScriptOutputs['tenantID'] = $tenantID\n\r$DeploymentScriptOutputs['appClientID'] = $appClientID\n\r$DeploymentScriptOutputs['appClientSecret'] = $appClientSecret",
+        "timeout": "PT1H",
+        "cleanupPreference": "OnSuccess",
+        "retentionInterval": "P1D"
+      }
+    }
+  ],
+  "outputs": {
+    "tenantID": {
+      "value": "[reference('createAzureActiveDirectoryApp').outputs.tenantID]",
+      "type": "string"
+    },
+    "appClientID": {
+      "value": "[reference('createAzureActiveDirectoryApp').outputs.appClientID]",
+      "type": "string"
+    },
+    "appClientSecret": {
+      "value": "[reference('createAzureActiveDirectoryApp').outputs.appClientSecret]",
+      "type": "string"
+    }
+  }
+}
