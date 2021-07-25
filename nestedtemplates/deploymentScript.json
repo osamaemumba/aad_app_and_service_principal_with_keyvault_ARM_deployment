@@ -1,0 +1,66 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "utcValue": {
+        "type": "string",
+        "defaultValue": "[utcNow()]"
+      },
+      "azureUserId": {
+        "type": "string"
+      },
+      "azureUserPassword": {
+        "type": "securestring"
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "description": "Specifies the Azure location where the identity will be created."
+        }
+      }
+    },
+    "variables": {
+      "dsIdentityName": "dsId"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Resources/deploymentScripts",
+        "apiVersion": "2020-10-01",
+        "name": "createAzureActiveDirectoryApp",
+        "location": "[parameters('location')]",
+        "kind": "AzurePowerShell",
+        "dependsOn": [
+          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('dsIdentityName'))]"
+        ],
+        "identity": {
+          "type": "UserAssigned",
+          "userAssignedIdentities": {
+            "[resourceID('Microsoft.ManagedIdentity/userAssignedIdentities', variables('dsIdentityName'))]": {}
+          }
+        },
+        "properties": {
+          "forceUpdateTag": "[parameters('utcValue')]",
+          "azPowerShellVersion": "5.0",
+          "arguments": "[concat('-appName', ' ', concat('\\\"', 'azure-ad-app-', parameters('utcValue'), '\\\"'), ' ', '-subscriptionName', ' ', concat('\\\"', subscription().displayName, '\\\"'), ' ', '-azureUserId', ' ', concat('\\\"', parameters('azureUserId'), '\\\"'), ' ', '-azureUserPassword', ' ', concat('\\\"', parameters('azureUserPassword'), '\\\"'))]",
+          "scriptContent": "Install-Module -Name \"Az.Accounts\" -Force\n\r$PWord = ConvertTo-SecureString -String $azureUserPassword -AsPlainText -Force\n\r$User = $azureUserId\n\r$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord\n\rConnect-AzAccount -Credential $Credential\n\rImport-Module Az.Resources\n\r$randomString = -join (((48..57)+(65..90)+(97..122)) * 80 |Get-Random -Count 24 |%{[char]$_})\n\r$spcredentials = New-Object Microsoft.Azure.Commands.ActiveDirectory.PSADPasswordCredential -Property @{StartDate=Get-Date; EndDate=Get-Date -Year 2024; Password=$randomString}\n\r$ServicePrincipal = New-AzAdServicePrincipal -DisplayName ServicePrincipalName -PasswordCredential $spcredentials\n\rStart-Sleep -s 30\n\rNew-AzRoleAssignment -ApplicationId $ServicePrincipal.ApplicationId -RoleDefinitionName 'Contributor'\n\r$appClientSecret = $randomString\n\r$tenantID = (Get-AzSubscription -SubscriptionName $subscriptionName).TenantId\n\r$appClientID = $ServicePrincipal.ApplicationId\n\r$DeploymentScriptOutputs = @{}\n\r$DeploymentScriptOutputs['tenantID'] = $tenantID\n\r$DeploymentScriptOutputs['appClientID'] = $appClientID\n\r$DeploymentScriptOutputs['appClientSecret'] = $appClientSecret",
+          "timeout": "PT1H",
+          "cleanupPreference": "OnSuccess",
+          "retentionInterval": "P1D"
+        }
+      }
+    ],
+    "outputs": {
+      "tenantID": {
+        "value": "[reference('createAzureActiveDirectoryApp').outputs.tenantID]",
+        "type": "string"
+      },
+      "appClientID": {
+        "value": "[reference('createAzureActiveDirectoryApp').outputs.appClientID]",
+        "type": "string"
+      },
+      "appClientSecret": {
+        "value": "[reference('createAzureActiveDirectoryApp').outputs.appClientSecret]",
+        "type": "string"
+      }
+    }
+  }
