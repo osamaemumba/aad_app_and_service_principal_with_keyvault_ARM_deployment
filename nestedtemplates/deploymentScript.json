@@ -29,9 +29,7 @@
         "name": "createAzureActiveDirectoryApp",
         "location": "[parameters('location')]",
         "kind": "AzurePowerShell",
-        "dependsOn": [
-          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('dsIdentityName'))]"
-        ],
+        "dependsOn": [],
         "identity": {
           "type": "UserAssigned",
           "userAssignedIdentities": {
