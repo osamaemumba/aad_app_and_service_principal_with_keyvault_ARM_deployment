@@ -16,7 +16,9 @@
   "variables": {
     "dsRoleAssignmentId": "[guid(resourceGroup().id, variables('dsRoleDefinitionId'), resourceId('Microsoft.ManagedIdentity/identities', variables('dsIdentityName')))]",
     "dsRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
-    "dsIdentityName": "dsId"
+    "dsIdentityName": "dsId",
+    "azureUserId": "[parameters('azureUserId')]",
+    "password": "[parameters('password')]"
   },
   "resources": [
     {
@@ -54,8 +56,8 @@
       "properties": {
         "forceUpdateTag": "[parameters('utcValue')]",
         "azPowerShellVersion": "5.0",
-        "arguments": "[concat('-appName', ' ', concat('\\\"', 'newApp',uniquestring(resourceGroup().id), '\\\"'), ' ', '-subscriptionName', ' ', concat('\\\"', subscription().displayName, '\\\"'), ' ', '-azureUserId', ' ', concat('\\\"', parameters('azureUserId'), '\\\"'), ' ', '-password', ' ', concat('\\\"', parameters('password'), '\\\"'))]",
-        "scriptContent": "Install-Module -Name \"Az.Accounts\" -Force\n\r$PWord = ConvertTo-SecureString -String '@4^8RaIn' -AsPlainText -Force\n\r$User = \"osama@emumbapvtgmail.onmicrosoft.com\"\n\r$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord\n\rConnect-AzAccount -Credential $Credential\n\rImport-Module Az.Resources\n\r$randomString = -join (((48..57)+(65..90)+(97..122)) * 80 |Get-Random -Count 24 |%{[char]$_})\n\r$spcredentials = New-Object Microsoft.Azure.Commands.ActiveDirectory.PSADPasswordCredential -Property @{StartDate=Get-Date; EndDate=Get-Date -Year 2024; Password=$randomString}\n\r$ServicePrincipal = New-AzAdServicePrincipal -DisplayName ServicePrincipalName -PasswordCredential $spcredentials\n\rStart-Sleep -s 30\n\rNew-AzRoleAssignment -ApplicationId $ServicePrincipal.ApplicationId -RoleDefinitionName 'Contributor'\n\r$appClientSecret = $randomString\n\r$tenantID = (Get-AzSubscription -SubscriptionName $subscriptionName).TenantId\n\r$appClientID = $ServicePrincipal.ApplicationId\n\r$DeploymentScriptOutputs = @{}\n\r$DeploymentScriptOutputs['tenantID'] = $tenantID\n\r$DeploymentScriptOutputs['appClientID'] = $appClientID\n\r$DeploymentScriptOutputs['appClientSecret'] = $appClientSecret",
+        "arguments": "[concat('-appName', ' ', concat('\\\"', 'azure-ad-app-', parameters('utcValue'), '\\\"'), ' ', '-subscriptionName', ' ', concat('\\\"', subscription().displayName, '\\\"'), ' ', '-azureUserId', ' ', concat('\\\"', variables('azureUserId'), '\\\"'), ' ', '-password', ' ', concat('\\\"', variables('password'), '\\\"'))]",
+        "scriptContent": "Install-Module -Name \"Az.Accounts\" -Force\n\r$PWord = ConvertTo-SecureString -String $password -AsPlainText -Force\n\r$User = $azureUserId\n\r$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord\n\rConnect-AzAccount -Credential $Credential\n\rImport-Module Az.Resources\n\r$randomString = -join (((48..57)+(65..90)+(97..122)) * 80 |Get-Random -Count 24 |%{[char]$_})\n\r$spcredentials = New-Object Microsoft.Azure.Commands.ActiveDirectory.PSADPasswordCredential -Property @{StartDate=Get-Date; EndDate=Get-Date -Year 2024; Password=$randomString}\n\r$ServicePrincipal = New-AzAdServicePrincipal -DisplayName ServicePrincipalName -PasswordCredential $spcredentials\n\rStart-Sleep -s 30\n\rNew-AzRoleAssignment -ApplicationId $ServicePrincipal.ApplicationId -RoleDefinitionName 'Contributor'\n\r$appClientSecret = $randomString\n\r$tenantID = (Get-AzSubscription -SubscriptionName $subscriptionName).TenantId\n\r$appClientID = $ServicePrincipal.ApplicationId\n\r$DeploymentScriptOutputs = @{}\n\r$DeploymentScriptOutputs['tenantID'] = $tenantID\n\r$DeploymentScriptOutputs['appClientID'] = $appClientID\n\r$DeploymentScriptOutputs['appClientSecret'] = $appClientSecret",
         "timeout": "PT1H",
         "cleanupPreference": "OnSuccess",
         "retentionInterval": "P1D"
