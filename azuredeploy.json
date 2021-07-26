@@ -114,7 +114,7 @@
               "azureUserPassword": {
                     "reference": {
                         "keyVault": {
-                            "id": "[resourceId(subscription().subscriptionId,  resourceGroup().name, 'Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+                            "id": "[reference('keyVaultDeployment').outputs.azureUserPasswordUri.value]"
                         },
                         "secretName": "azureUserPassword"
                         }

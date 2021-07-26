@@ -62,7 +62,7 @@
       }
     ],
     "outputs": {
-      "dbSecretUri": {
+      "azureUserPasswordUri": {
           "type": "string",
           "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
       }
