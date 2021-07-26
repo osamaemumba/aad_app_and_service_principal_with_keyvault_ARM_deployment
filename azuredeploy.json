@@ -93,8 +93,7 @@
         "type": "Microsoft.Resources/deployments",
         "apiVersion": "2018-05-01",
         "dependsOn": [
-            "[resourceId('Microsoft.Resources/deployments','keyVaultPermissionsUpdate')]",
-            "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            "[resourceId('Microsoft.Resources/deployments','keyVaultPermissionsUpdate')]"
         ],
         "properties": {
           "mode": "Incremental",
