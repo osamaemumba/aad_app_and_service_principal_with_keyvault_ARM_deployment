@@ -20,7 +20,6 @@
           }
     },
     "variables": {
-      "_artifactsLocation": "[deployment().properties.templatelink.uri]",
       "keyVaultName": "[toLower(concat(parameters('keyVaultName'), uniquestring(resourceGroup().id)))]",
       "location": "[resourceGroup().location]"
     },
@@ -33,7 +32,7 @@
         "properties": {
           "mode": "Incremental",
           "templatelink": {
-            "uri": "[uri(variables('_artifactsLocation'), concat('nestedtemplates/keyvault.json'))]"
+            "uri": "https://raw.githubusercontent.com/osamaemumba/purview-poc/main/nestedtemplates/keyvault.json"
           },
           "parameters": {
               "location": {
@@ -58,7 +57,7 @@
         "properties": {
           "mode": "Incremental",
           "templatelink": {
-            "uri": "[uri(variables('_artifactsLocation'), concat('nestedtemplates/identityAndRoleAssignment.json'))]"
+            "uri": "https://raw.githubusercontent.com/osamaemumba/purview-poc/main/nestedtemplates/identityAndRoleAssignment.json"
           },
           "parameters": {
             "location": {
@@ -77,7 +76,7 @@
           "properties": {
             "mode": "Incremental",
             "templatelink": {
-              "uri": "[uri(variables('_artifactsLocation'), concat('nestedtemplates/keyvaultpermissionsupdate.json'))]"
+              "uri": "https://raw.githubusercontent.com/osamaemumba/purview-poc/main/nestedtemplates/keyvaultpermissionsupdate.json"
             },
             "parameters": {
                 "location": {
@@ -99,7 +98,7 @@
         "properties": {
           "mode": "Incremental",
           "templatelink": {
-            "uri": "[uri(variables('_artifactsLocation'), concat('nestedtemplates/deploymentScript.json'))]"
+            "uri": "https://raw.githubusercontent.com/osamaemumba/purview-poc/main/nestedtemplates/deploymentScript.json"
           },
           "parameters": {
               "location": {
