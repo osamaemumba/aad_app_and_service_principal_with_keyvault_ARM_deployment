@@ -111,18 +111,17 @@
                   "value": "[parameters('azureUserId')]"
               },
               "azureUserPassword": {
-                  "value": {
                     "reference": {
                         "keyVault": {
                             "id": "[resourceId(subscription().subscriptionId,  resourceGroup().name, 'Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
                         },
                         "secretName": "azureUserPassword"
                         }
+                    
                     }
                 }
-            }
     
-          }
+            }
     
         }
     ]
